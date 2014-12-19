@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="kr">
+<head>
+	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link rel="stylesheet" type="text/css" href="//maxcdn.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="./timetable.css">
+
+	<script type="text/javascript" src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+	<script type="text/javascript" src="//maxcdn.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+
+
+	<title>몰래보는 출근부 ver2</title>
+
+</head>
+
+<body>
+
+
+<div id="infotable">
+	<span class="events">
+		<h2><span class="label label-info label-xs">이벤트 현황</span></h2>
+		
+	</span>
+
+	<span class="section">
+		<h2><span class="label label-primary">서울</span></h2>
+		
+		<span id="강남" class="region fold">
+			<button type="button" class="btn btn-default btn-sm" >
+				<span class="glyphicon glyphicon-refresh"></span>
+				<span class="glyphicon glyphicon-th-list"></span>강남
+			</button>
+			<ul class="list-group"></ul>
+		</span>
+		
+
+		<span id="강북" class="region fold">
+			<button type="button" class="btn btn-default btn-sm" >
+				<span class="glyphicon glyphicon-refresh"></span>
+				<span class="glyphicon glyphicon-th-list"></span>강북
+			</button>
+			<ul class="list-group"></ul>
+		</span>
+
+		<span id="강서" class="region fold">
+			<button type="button" class="btn btn-default btn-sm" >
+				<span class="glyphicon glyphicon-refresh"></span>
+				<span class="glyphicon glyphicon-th-list"></span>강서
+			</button>
+			<ul class="list-group"></ul>
+		</span>	
+	</span>
+	
+	<span class="section">
+		<h2><span class="label label-success">인천, 부천</span></h2>
+		
+		<span id="인부천" class="region fold">
+			<button type="button" class="btn btn-default btn-sm" >
+				<span class="glyphicon glyphicon-refresh"></span>
+				<span class="glyphicon glyphicon-th-list"></span>인천, 부천
+			</button>
+			<ul class="list-group"></ul>
+		</span>
+	</span>
+
+	<span class="section">
+		<h2><span class="label label-warning">경기</span></h2>
+		
+		<span id="경기북부" class="region fold">
+			<button type="button" class="btn btn-default btn-sm" >
+				<span class="glyphicon glyphicon-refresh"></span>
+				<span class="glyphicon glyphicon-th-list"></span>경기북부
+			</button>
+			<ul class="list-group"></ul>
+		</span>		
+
+		<span id="경기남부" class="region fold">
+			<button type="button" class="btn btn-default btn-sm" >
+				<span class="glyphicon glyphicon-refresh"></span>
+				<span class="glyphicon glyphicon-th-list"></span>경기남부
+			</button>
+			<ul class="list-group"></ul>
+		</span>	
+	</span>
+</div>
+
+<div id="detailview">
+	<button type="button" class="btn btn-default btn-lg" >
+		<span class="glyphicon glyphicon-remove-sign"></span> 닫기
+	</button>
+	<span class="content">
+		
+	</span>
+</div>
+
+
+<script type="text/javascript">
+
+	var paramsMap = { 	
+						강남:'/bbs/board.php?bo_table=n_kissinfo1&sfl=wr_5&stx=%BC%AD%BF%EF&stx1=%BC%AD%BF%EF%B0%AD%B3%B2', 
+						강북:'/bbs/board.php?bo_table=n_kissinfo1&sfl=wr_5&stx=%BC%AD%BF%EF&stx1=%BC%AD%BF%EF%B0%AD%BA%CF', 
+						강서:'/bbs/board.php?bo_table=n_kissinfo1&sfl=wr_5&stx=%BC%AD%BF%EF&stx1=%BC%AD%BF%EF%B0%AD%BC%AD', 
+						인부천:'/bbs/board.php?bo_table=n_kissinfo1&sfl=wr_5&stx=%B0%E6%B1%E2&stx1=%C0%CE%C3%B5%BA%CE%C3%B5', 
+						경기북부:'/bbs/board.php?bo_table=n_kissinfo1&sfl=wr_5&stx=%B0%E6%B1%E2&stx1=%B0%E6%B1%E2%BA%CF%BA%CE', 
+						경기남부:'/bbs/board.php?bo_table=n_kissinfo1&sfl=wr_5&stx=%B0%E6%B1%E2&stx1=%B0%E6%B1%E2%B3%B2%BA%CE' 
+					};
+
+
+	$(document).ready(function(){
+
+		getEvents();
+
+		$('.region button').bind('click', function(){
+			var r     = $(this).parent();
+			var param = paramsMap[r.attr('id')];
+
+			r.toggleClass( 'fold' );
+
+			if( !r.hasClass('fold') ){
+				
+				// 데이터 없을 경우에만 로딩
+				if( r.find('ul li').length == 0 ){
+
+					r.addClass( 'loading' );
+
+					getList( param, function( data ){
+						r.find('ul').html( data );
+						r.removeClass( 'loading' );
+					});
+				}
+			}
+		});
+
+		$('.list-group').on( 'click', '.list-group-item .title', function(){
+			var addr = $(this).attr('href')
+			getBody( addr, openTimetable );
+		});
+
+		$('#detailview button').bind('click', function(){
+			$(this).parent().removeClass('view');
+		});
+
+
+
+
+
+
+
+
+		function openTimetable( content ){
+			$('#detailview').addClass( 'view' );
+
+			console.log( content );
+			$('#detailview .content').html( content );
+		}
+
+
+		function getEvents( callback ){
+			var url = '/test/fetchList.php?param=' + encodeURIComponent('/bbs/board.php?bo_table=n_kissinfo_05&page=2&page=1');
+			$.get( url, function( data ){
+				data = data.replace( /\r|\n/gm, '' ); // 줄넘김 삭제
+				var reg = /<!-- 게시판 목록 시작 -->(.|\n|\r)+?<!-- 게시판 목록 끝 -->/g;
+				data = data.match( reg )[0];
+				// 	reg = /<tr(.|\n|\r)+?마왕(.|\n|\r)+?<\/tr>/;
+				// data = data.match( reg );
+				data = $(data).find('tr');
+				var len = data.length;
+
+				for( var i=0; i<len; i++ ){
+					var li = $(data[i]);
+					if( li.find(".name span a").text() == '마왕' ){
+						$('.events').append(convertEventLine(li.find('.subject').html()));
+					}
+				}
+			});
+		}
+
+		function convertEventLine( html ){
+			// src뒤에 오는 상대경로를 모두 절대 경로로 수정
+			html = html.replace( /src\s*=\s*(['"])(\.\.)*(\/)/g, 'src=$1http://www.kissinfo.co.kr/');
+			html = html.replace( /href\s*=\s*(['"])(\.\.)*(\/)/g, 'href=$1http://www.kissinfo.co.kr/');
+			return '<span>'+ html + '</span>';
+		}
+
+
+		function getBody( vars, callback ){
+			var url = '/test/fetchList.php?param=' +  encodeURIComponent(vars);
+			$.get( url, function( data ){
+
+
+// 				<div style="clear:both; height:54px; background:url(../skin/board/n_kissinfo1/img/title_bg.gif) repeat-x;">
+//     <table border="0" cellpadding="0" cellspacing="0" width="100%">
+//     <tbody><tr>
+//         <td style="padding:17px 0 0 20px;">
+//             <div style="color:#576273; font-size:13px; font-weight:bold; word-break:break-all;">
+//                      제목..     </div>
+//         </td>
+//         <td align="right" style="padding:17px 20px 0 0;" width="120"><!--14-05-21 02:19-->
+//             <!--<a href="javascript:;" onclick="win_scrap('./scrap_popin.php?bo_table=n_kissinfo1&wr_id=1291');"><img src='../skin/board/n_kissinfo1/img/btn_scrap.gif' border='0' align='absmiddle'></a>             -->
+//         </td>
+//     </tr>
+//     </tbody></table>
+// </div>
+
+
+
+				var reg = /<div style="clear:both; height:54px; background:url(.|\n|\r)+?<!-- \?\?\? \?±\? \?\?\?\?\?\? -->/g;
+				data = data.match( reg )[0];
+
+				// src뒤에 오는 상대경로를 모두 절대 경로로 수정
+				data = data.replace( /src\s*=\s*(['"])(\.\.)*(\/)/g, 'src=$1http://www.kissinfo.co.kr/');
+
+
+				// 상단 쓸모없는 요소들 삭제
+				// 본문은 #writeContents, 정보는 4번째 뎁스 테이블
+
+				// 강제 width먹여있는거 지워버리기
+				data = data.replace( /width:.+?;*/g, '' ).replace( /width=(['"]).+?['"]/g, '' );
+
+				callback( data );
+			});
+		}
+
+
+ 
+
+		function getList( vars, callback ){
+			var url = '/test/fetchList.php?param=' +  encodeURIComponent(vars);
+			$.get( url, function( data ){ 
+				data = data.replace( /\r|\n/gm, '' ); // 줄넘김 삭제
+				data = data.replace( /\<\!--.+?--\>/g, '' ); // 주석삭제
+				var reg = /\<div\s+class\s*=\s*["']board_top["']\s*\>.+?(\<\/table\>)/gi; // 출근표 근처 영역 추출
+				data = data.match( reg )[0];
+				
+				// 걔중에 목록으로 쓰이는 tr태그만 추출
+				reg = /(<tr)(.+?)(\/tr\>)/gi; 
+				data = data.match( reg );
+				data.length = data.length -2; // 뒤에 쓸모없는 tr태그 2개 삭제
+
+
+				// 전화번호 찾기용 정규표현식 준비
+				reg = /(<span>)((01[016789]{1}|02|0[3-9]{1}[0-9]{1})-?[0-9]{3,4}-?[0-9]{4})(\s*<\/span>)/g;
+				var len = data.length;
+				for( var i=0; i<len; i++ ){
+					// tr을 li로.. 하는김에 스타일도 삭제
+					data[i] = data[i].replace( /\<tr.+?\>/, '<li class="list-group-item">' ).replace( /\/tr\>/, '/li>' );
+
+					// td를 span으로..
+					data[i] = data[i].replace( /\<td(.|\w)+?\>/g, '<span>').replace( /\/td\>/g, '/span>' );
+
+					// url들어있는 태그를 span으로 치환..
+					data[i] = data[i].replace( /span><a/, 'span class="title"' ).replace( /<\/a>/, '' ).replace( /\.{2}/, '' );
+
+					// 전화번호를 찾아서 클릭할 수 있게..
+					data[i] = data[i].replace( reg, '<a href="tel:$2">$2</a>' );
+				}
+
+				callback( data );
+			});
+		}// getList
+		
+	});
+</script>
+
+</body>
+<html/>
